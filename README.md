@@ -232,11 +232,11 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 👨‍💻 **Desenvolvedor**
 
-**Seu Nome** - Desenvolvedor .NET
+**Pedro Loterio** - Desenvolvedor .NET
 
-- 🌐 GitHub: [@seu-usuario](https://github.com/seu-usuario)
-- 💼 LinkedIn: [Seu Perfil](https://linkedin.com/in/seu-perfil)
-- 📧 Email: seu.email@exemplo.com
+- 🌐 GitHub: [@0LOTERIO1](https://github.com/0LOTERIO1)
+- 💼 LinkedIn: [Pedro Loterio](https://www.linkedin.com/in/pedroloterio)
+- 📧 Email: loterio.fiap@gmail.com
 
 ---
 
