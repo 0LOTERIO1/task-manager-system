@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "inwc4Ex5030=",
+  "success": true,
+  "projectFilePath": "C:\\projetoEstudo\\TaskManager.Web\\TaskManager.Web.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\pedro\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.0-rc.1.25451.107\\microsoft.aspnetcore.app.internal.assets.10.0.0-rc.1.25451.107.nupkg.sha512"
+  ],
+  "logs": []
+}

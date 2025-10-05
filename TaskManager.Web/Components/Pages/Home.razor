@@ -1,0 +1,353 @@
+﻿@page "/"
+@using TaskManager.Core.DTOs
+@using TaskManager.Web.Services
+@inject ITaskService TaskService
+@inject ICategoryService CategoryService
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #000000 0%, #6c757d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-speedometer2 me-3"></i>Dashboard
+            </h1>
+            <p class="lead text-muted">Gerencie suas tarefas e categorias de forma eficiente</p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-5">
+            <div class="col-md-3 mb-3">
+                <div class="card shadow-lg border-0 text-white" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border-radius: 20px; transition: transform 0.3s ease;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="card-title mb-1 fw-bold" style="font-size: 2.5rem;">@totalTasks</h3>
+                                <p class="card-text mb-0 text-white-50 fw-medium">Total de Tarefas</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-list-task" style="font-size: 3rem; opacity: 0.8;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card shadow-lg border-0 text-white" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 20px; transition: transform 0.3s ease;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="card-title mb-1 fw-bold" style="font-size: 2.5rem;">@completedTasks</h3>
+                                <p class="card-text mb-0 text-white-50 fw-medium">Concluídas</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.8;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card shadow-lg border-0 text-white" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border-radius: 20px; transition: transform 0.3s ease;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="card-title mb-1 fw-bold" style="font-size: 2.5rem;">@pendingTasks</h3>
+                                <p class="card-text mb-0 text-white-50 fw-medium">Pendentes</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-clock" style="font-size: 3rem; opacity: 0.8;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card shadow-lg border-0 text-white" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); border-radius: 20px; transition: transform 0.3s ease;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="card-title mb-1 fw-bold" style="font-size: 2.5rem;">@categories.Count</h3>
+                                <p class="card-text mb-0 text-white-50 fw-medium">Categorias</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-tags" style="font-size: 3rem; opacity: 0.8;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categorias com Tarefas -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 20px;">
+                    <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 20px 20px 0 0; padding: 25px;">
+                        <h5 class="mb-0 text-white fw-bold" style="font-size: 1.4rem;">
+                            <i class="bi bi-collection me-2"></i>Categorias e Tarefas
+                        </h5>
+                        <a href="/categories" class="btn btn-outline-light btn-sm px-3 py-2" style="border-radius: 25px; font-weight: 500; border: 2px solid #ffffff20; transition: all 0.3s ease;">
+                            <i class="bi bi-gear me-1"></i>Gerenciar
+                        </a>
+                    </div>
+                    <div class="card-body p-4">
+                        @if (categories.Any())
+                        {
+                            <div class="accordion" id="categoriesAccordion">
+                                @foreach (var category in categories)
+                                {
+                                    var categoryTasks = recentTasks.Where(t => t.CategoryId == category.Id).ToList();
+                                    var completedInCategory = categoryTasks.Count(t => t.IsCompleted);
+                                    var pendingInCategory = categoryTasks.Count(t => !t.IsCompleted);
+                                    
+                                    <div class="accordion-item mb-3" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                        <h2 class="accordion-header" id="heading@(category.Id)">
+                                            <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(category.Id)" aria-expanded="false" aria-controls="collapse@(category.Id)" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border: none; border-radius: 15px; padding: 20px; font-size: 1.1rem;">
+                                                <div class="d-flex align-items-center w-100">
+                                                    <div class="rounded-circle me-3 shadow-sm" style="width: 16px; height: 16px; background-color: @category.Color; border: 2px solid #ffffff;"></div>
+                                                    <span class="text-dark">@category.Name</span>
+                                                    <div class="ms-auto d-flex gap-2">
+                                                        @if (completedInCategory > 0)
+                                                        {
+                                                            <span class="badge rounded-pill px-3 py-2" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; font-weight: 500;">
+                                                                <i class="bi bi-check-circle me-1"></i>@completedInCategory concluídas
+                                                            </span>
+                                                        }
+                                                        @if (pendingInCategory > 0)
+                                                        {
+                                                            <span class="badge rounded-pill px-3 py-2" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); color: white; font-weight: 500;">
+                                                                <i class="bi bi-clock me-1"></i>@pendingInCategory pendentes
+                                                            </span>
+                                                        }
+                                                        @if (categoryTasks.Count == 0)
+                                                        {
+                                                            <span class="badge rounded-pill px-3 py-2" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; font-weight: 500;">
+                                                                <i class="bi bi-inbox me-1"></i>Sem tarefas
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </h2>
+                                        <div id="collapse@(category.Id)" class="accordion-collapse collapse" aria-labelledby="heading@(category.Id)" data-bs-parent="#categoriesAccordion">
+                                            <div class="accordion-body p-0" style="border-radius: 0 0 15px 15px;">
+                                                @if (categoryTasks.Any())
+                                                {
+                                                    <div class="p-3">
+                                                        @foreach (var task in categoryTasks.OrderByDescending(t => t.CreatedAt).Take(5))
+                                                        {
+                                                            <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border-left: 4px solid @category.Color; transition: all 0.3s ease;">
+                                                                <div class="d-flex align-items-center">
+                                                                    @if (task.IsCompleted)
+                                                                    {
+                                                                        <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <i class="bi bi-circle text-muted me-3 fs-5"></i>
+                                                                    }
+                                                                    <div>
+                                                                        <h6 class="mb-1 @(task.IsCompleted ? "text-decoration-line-through text-muted" : "text-dark")" style="font-size: 1rem; font-weight: 600;">@task.Title</h6>
+                                                                        @if (task.DueDate.HasValue)
+                                                                        {
+                                                                            <small class="text-muted d-flex align-items-center">
+                                                                                <i class="bi bi-calendar-event me-1"></i>Vence: @task.DueDate.Value.ToString("dd/MM/yyyy")
+                                                                            </small>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                                <span class="badge rounded-pill px-3 py-2 fw-bold" style="background: linear-gradient(135deg, @GetPriorityGradient(task.Priority) 0%, @GetPriorityGradient(task.Priority) 100%); color: white; font-size: 0.8rem;">
+                                                                    @GetPriorityText(task.Priority)
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                        @if (categoryTasks.Count > 5)
+                                                        {
+                                                            <div class="text-center mt-3 p-2">
+                                                                <span class="badge bg-light text-dark px-3 py-2 rounded-pill">
+                                                                    <i class="bi bi-three-dots me-1"></i>+@(categoryTasks.Count - 5) tarefas adicionais
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center p-4">
+                                                        <i class="bi bi-inbox fs-1 text-muted mb-2"></i>
+                                                        <p class="text-muted mb-0 fw-medium">Nenhuma tarefa nesta categoria</p>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center p-5">
+                                <i class="bi bi-folder-x fs-1 text-muted mb-3"></i>
+                                <h5 class="text-muted">Nenhuma categoria encontrada</h5>
+                                <p class="text-muted">Crie sua primeira categoria para começar a organizar suas tarefas.</p>
+                                <a href="/categories" class="btn btn-dark px-4 py-2" style="border-radius: 25px; background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none;">
+                                    <i class="bi bi-plus-circle me-2"></i>Criar Categoria
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações Rápidas -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Ações Rápidas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <a href="/tasks" class="btn btn-primary w-100 mb-2">
+                                    <i class="bi bi-plus-circle"></i> Nova Tarefa
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="/categories" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="bi bi-tag"></i> Nova Categoria
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="/tasks" class="btn btn-outline-success w-100 mb-2">
+                                    <i class="bi bi-list-check"></i> Ver Tarefas
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-outline-secondary w-100 mb-2" @onclick="RefreshData" disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    }
+                                    Atualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TaskDto> recentTasks = new();
+    private List<CategoryDto> categories = new();
+    private bool isLoading = true;
+    
+    private int totalTasks = 0;
+    private int completedTasks = 0;
+    private int pendingTasks = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            Console.WriteLine("Dashboard: Iniciando carregamento de dados...");
+            
+            var tasksTask = TaskService.GetTasksAsync();
+            var categoriesTask = CategoryService.GetCategoriesAsync();
+
+            await System.Threading.Tasks.Task.WhenAll(tasksTask, categoriesTask);
+
+            var allTasks = (await tasksTask).ToList();
+            categories = (await categoriesTask).ToList();
+
+            Console.WriteLine($"Dashboard: Carregadas {allTasks.Count} tarefas e {categories.Count} categorias");
+
+            recentTasks = allTasks.OrderByDescending(t => t.CreatedAt).ToList();
+            totalTasks = allTasks.Count;
+            completedTasks = allTasks.Count(t => t.IsCompleted);
+            pendingTasks = allTasks.Count(t => !t.IsCompleted);
+
+            Console.WriteLine($"Dashboard: Estatísticas - Total: {totalTasks}, Concluídas: {completedTasks}, Pendentes: {pendingTasks}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar dados do dashboard: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        Console.WriteLine("Dashboard: Botão atualizar clicado");
+        await LoadDashboardData();
+    }
+
+    private string GetPriorityColor(TaskManager.Core.Entities.TaskPriority priority)
+    {
+        return priority switch
+        {
+            TaskManager.Core.Entities.TaskPriority.Low => "success",
+            TaskManager.Core.Entities.TaskPriority.Medium => "warning",
+            TaskManager.Core.Entities.TaskPriority.High => "danger",
+            TaskManager.Core.Entities.TaskPriority.Critical => "dark",
+            _ => "secondary"
+        };
+    }
+
+    private string GetPriorityText(TaskManager.Core.Entities.TaskPriority priority)
+    {
+        return priority switch
+        {
+            TaskManager.Core.Entities.TaskPriority.Low => "Baixa",
+            TaskManager.Core.Entities.TaskPriority.Medium => "Média",
+            TaskManager.Core.Entities.TaskPriority.High => "Alta",
+            TaskManager.Core.Entities.TaskPriority.Critical => "Crítica",
+            _ => "Desconhecida"
+        };
+    }
+
+    private string GetPriorityGradient(TaskManager.Core.Entities.TaskPriority priority)
+    {
+        return priority switch
+        {
+            TaskManager.Core.Entities.TaskPriority.Low => "#28a745, #20c997",
+            TaskManager.Core.Entities.TaskPriority.Medium => "#ffc107, #fd7e14",
+            TaskManager.Core.Entities.TaskPriority.High => "#dc3545, #e83e8c",
+            TaskManager.Core.Entities.TaskPriority.Critical => "#6f42c1, #495057",
+            _ => "#6c757d, #495057"
+        };
+    }
+}

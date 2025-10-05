@@ -1,0 +1,213 @@
+@page "/categories"
+@using TaskManager.Web.Services
+@using TaskManager.Core.DTOs
+
+@inject ICategoryService CategoryService
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #000000 0%, #6c757d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-tags me-3"></i>Categorias
+            </h1>
+            <p class="lead text-muted">Organize suas tarefas em categorias personalizadas</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Formulário de Nova Categoria -->
+            <div class="card shadow-lg border-0 mb-5" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 20px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 20px 20px 0 0; padding: 25px;">
+                    <h5 class="mb-0 text-white fw-bold" style="font-size: 1.4rem;">
+                        <i class="bi bi-plus-circle me-2"></i>Nova Categoria
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-3">
+                                <label class="form-label text-white fw-medium">Nome da Categoria</label>
+                                <input type="text" class="form-control form-control-lg" @bind="newCategory.Name" required style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;" placeholder="Digite o nome da categoria">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-3">
+                                <label class="form-label text-white fw-medium">Cor da Categoria</label>
+                                <input type="color" class="form-control form-control-color form-control-lg" @bind="newCategory.Color" style="border-radius: 12px; border: 2px solid #ffffff20; height: 50px;">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-light btn-lg px-4 py-3 fw-bold" onclick="createCategory()" style="border-radius: 25px; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #000; border: none; transition: all 0.3s ease;">
+                        <i class="bi bi-plus-circle me-2"></i>Criar Categoria
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Categorias -->
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 20px;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 20px 20px 0 0; padding: 25px;">
+                    <h5 class="mb-0 text-white fw-bold" style="font-size: 1.4rem;">
+                        <i class="bi bi-collection me-2"></i>Categorias Existentes
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="/tasks" class="btn btn-outline-light btn-sm px-3 py-2" style="border-radius: 25px; font-weight: 500; border: 2px solid #ffffff20; transition: all 0.3s ease;">
+                            <i class="bi bi-list-task me-1"></i>Tarefas
+                        </a>
+                        <a href="/categories" class="btn btn-outline-light btn-sm px-3 py-2" style="border-radius: 25px; font-weight: 500; border: 2px solid #ffffff20; transition: all 0.3s ease;">
+                            <i class="bi bi-gear me-1"></i>Gerenciar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-5">
+                            <div class="spinner-border text-white" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="text-white-50 mt-3">Carregando categorias...</p>
+                        </div>
+                    }
+                    else if (!categories.Any())
+                    {
+                        <div class="text-center p-5">
+                            <i class="bi bi-folder-x fs-1 text-white-50 mb-3"></i>
+                            <h5 class="text-white-50">Nenhuma categoria encontrada</h5>
+                            <p class="text-white-50">Crie sua primeira categoria para começar a organizar suas tarefas.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            @foreach (var category in categories)
+                            {
+                                <div class="col-md-4 mb-4">
+                                    <div class="card shadow-sm border-0" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 15px; transition: transform 0.3s ease;">
+                                        <div class="card-body p-4">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="rounded-circle me-3 shadow-sm" style="width: 24px; height: 24px; background-color: @category.Color; border: 2px solid #ffffff;"></div>
+                                                <h6 class="card-title mb-0 fw-bold text-dark" style="font-size: 1.1rem;">@category.Name</h6>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="badge rounded-pill px-3 py-2" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; font-weight: 500;">
+                                                    <i class="bi bi-list-task me-1"></i>@category.TaskCount tarefa(s)
+                                                </span>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-outline-primary btn-sm px-3 py-2 flex-fill" onclick="editCategory(@category.Id, '@category.Name', '@category.Color')" style="border-radius: 20px; font-weight: 500;">
+                                                    <i class="bi bi-pencil me-1"></i>Editar
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm px-3 py-2 flex-fill" onclick="deleteCategory(@category.Id)" style="border-radius: 20px; font-weight: 500;">
+                                                    <i class="bi bi-trash me-1"></i>Excluir
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<CategoryDto> categories = new();
+    private bool isLoading = true;
+    private CreateCategoryDto newCategory = new() { Color = "#007bff" };
+
+    protected override async System.Threading.Tasks.Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async System.Threading.Tasks.Task LoadCategories()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            categories = (await CategoryService.GetCategoriesAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar categorias: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async System.Threading.Tasks.Task CreateCategory()
+    {
+        try
+        {
+            Console.WriteLine("🚀🚀🚀 MÉTODO CreateCategory CHAMADO! 🚀🚀🚀");
+            Console.WriteLine($"Criando categoria: {newCategory.Name}");
+            Console.WriteLine($"Cor: {newCategory.Color}");
+            
+            if (string.IsNullOrWhiteSpace(newCategory.Name))
+            {
+                Console.WriteLine("❌ ERRO: Nome da categoria está vazio!");
+                return;
+            }
+            
+            await CategoryService.CreateCategoryAsync(newCategory);
+            newCategory = new CreateCategoryDto() { Color = "#007bff" };
+            await LoadCategories();
+            Console.WriteLine("✅ Categoria criada com sucesso!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erro ao criar categoria: {ex.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task EditCategory(CategoryDto category)
+    {
+        try
+        {
+            var newName = await System.Threading.Tasks.Task.Run(() => 
+            {
+                // Simulação de edição - em uma aplicação real, você abriria um modal
+                return "Categoria Editada";
+            });
+
+            var updateDto = new UpdateCategoryDto
+            {
+                Name = newName,
+                Color = category.Color
+            };
+
+            await CategoryService.UpdateCategoryAsync(category.Id, updateDto);
+            await LoadCategories();
+            Console.WriteLine("Categoria editada!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao editar categoria: {ex.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task DeleteCategory(int categoryId)
+    {
+        try
+        {
+            await CategoryService.DeleteCategoryAsync(categoryId);
+            await LoadCategories();
+            Console.WriteLine("Categoria excluída!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao excluir categoria: {ex.Message}");
+        }
+    }
+}

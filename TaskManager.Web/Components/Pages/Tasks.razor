@@ -1,0 +1,494 @@
+@page "/tasks"
+@using TaskManager.Web.Services
+@using TaskManager.Core.DTOs
+@using TaskManager.Core.Entities
+@using TaskEntity = TaskManager.Core.Entities.Task
+
+@inject ITaskService TaskService
+@inject ICategoryService CategoryService
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #000000 0%, #6c757d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-list-task me-3"></i>Minhas Tarefas
+            </h1>
+            <p class="lead text-muted">Gerencie suas tarefas e mantenha-se organizado</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Formulário de Nova Tarefa -->
+            <div class="card shadow-lg border-0 mb-5" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 20px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 20px 20px 0 0; padding: 25px;">
+                    <h5 class="mb-0 text-white fw-bold" style="font-size: 1.4rem;">
+                        <i class="bi bi-plus-circle me-2"></i>Nova Tarefa
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label text-white fw-medium">Título da Tarefa</label>
+                                    <input type="text" class="form-control form-control-lg" @bind="newTask.Title" required style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;" placeholder="Digite o título da tarefa">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label text-white fw-medium">Prioridade</label>
+                                    <select class="form-select form-select-lg" @bind="newTask.Priority" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;">
+                                        <option value="@TaskPriority.Low" style="background: #343a40; color: white;">🟢 Baixa</option>
+                                        <option value="@TaskPriority.Medium" style="background: #343a40; color: white;">🟡 Média</option>
+                                        <option value="@TaskPriority.High" style="background: #343a40; color: white;">🔴 Alta</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white fw-medium">Descrição</label>
+                            <textarea class="form-control form-control-lg" rows="3" @bind="newTask.Description" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;" placeholder="Digite uma descrição (opcional)"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label text-white fw-medium">Data de Vencimento</label>
+                                    <input type="date" class="form-control form-control-lg" @bind="newTask.DueDate" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label text-white fw-medium">Categoria</label>
+                                    <select class="form-select form-select-lg" @bind="newTask.CategoryId" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;">
+                                        <option value="" style="background: #343a40; color: white;">Selecione uma categoria</option>
+                                        @foreach (var category in categories)
+                                        {
+                                            <option value="@category.Id" style="background: #343a40; color: white;">@category.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-light btn-lg px-4 py-3 fw-bold" onclick="createTask()" style="border-radius: 25px; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #000; border: none; transition: all 0.3s ease;">
+                            <i class="bi bi-plus-circle me-2"></i>Criar Tarefa
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Tarefas -->
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 20px;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 20px 20px 0 0; padding: 25px;">
+                    <h5 class="mb-0 text-white fw-bold" style="font-size: 1.4rem;">
+                        <i class="bi bi-collection me-2"></i>Tarefas Existentes
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="/tasks" class="btn btn-outline-light btn-sm px-3 py-2" style="border-radius: 25px; font-weight: 500; border: 2px solid #ffffff20; transition: all 0.3s ease;">
+                            <i class="bi bi-list-task me-1"></i>Gerenciar
+                        </a>
+                        <a href="/categories" class="btn btn-outline-light btn-sm px-3 py-2" style="border-radius: 25px; font-weight: 500; border: 2px solid #ffffff20; transition: all 0.3s ease;">
+                            <i class="bi bi-tags me-1"></i>Categorias
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-5">
+                            <div class="spinner-border text-white" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="text-white-50 mt-3">Carregando tarefas...</p>
+                        </div>
+                    }
+                    else if (!tasks.Any())
+                    {
+                        <div class="text-center p-5">
+                            <i class="bi bi-inbox fs-1 text-white-50 mb-3"></i>
+                            <h5 class="text-white-50">Nenhuma tarefa encontrada</h5>
+                            <p class="text-white-50">Crie sua primeira tarefa para começar a se organizar.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            @foreach (var task in tasks)
+                            {
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card shadow-sm border-0" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 15px; transition: transform 0.3s ease; border-left: 4px solid @(task.CategoryColor ?? "#6c757d");">
+                                        <div class="card-body p-4">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <h6 class="card-title mb-0 fw-bold text-dark @(task.IsCompleted ? "text-decoration-line-through text-muted" : "")" style="font-size: 1.1rem;">@task.Title</h6>
+                                                @if (task.IsCompleted)
+                                                {
+                                                    <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-circle text-muted fs-4"></i>
+                                                }
+                                            </div>
+                                            
+                                            @if (!string.IsNullOrEmpty(task.Description))
+                                            {
+                                                <p class="card-text text-muted mb-3" style="font-size: 0.9rem;">@task.Description</p>
+                                            }
+                                            
+                                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                                @if (!string.IsNullOrEmpty(task.CategoryName))
+                                                {
+                                                    <span class="badge rounded-pill px-3 py-2" style="background: linear-gradient(135deg, @task.CategoryColor 0%, @task.CategoryColor 100%); color: white; font-weight: 500;">
+                                                        <i class="bi bi-tag me-1"></i>@task.CategoryName
+                                                    </span>
+                                                }
+                                                
+                                                <span class="badge rounded-pill px-3 py-2 fw-bold" style="background: linear-gradient(135deg, @GetPriorityGradient(task.Priority) 0%, @GetPriorityGradient(task.Priority) 100%); color: white; font-size: 0.8rem;">
+                                                    @GetPriorityText(task.Priority)
+                                                </span>
+                                                
+                                                @if (task.DueDate.HasValue)
+                                                {
+                                                    <span class="badge rounded-pill px-3 py-2" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; font-weight: 500;">
+                                                        <i class="bi bi-calendar-event me-1"></i>@task.DueDate.Value.ToString("dd/MM/yyyy")
+                                                    </span>
+                                                }
+                                            </div>
+                                            
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-outline-primary btn-sm px-3 py-2 flex-fill" onclick="editTask(@task.Id, '@task.Title', '@task.Description', @((int)task.Priority), @(task.CategoryId?.ToString() ?? "null"), '@(task.DueDate?.ToString("yyyy-MM-dd") ?? "")', @task.IsCompleted.ToString().ToLower())" style="border-radius: 20px; font-weight: 500;">
+                                                    <i class="bi bi-pencil me-1"></i>Editar
+                                                </button>
+                                                <button class="btn btn-outline-@(task.IsCompleted ? "warning" : "success") btn-sm px-3 py-2 flex-fill" onclick="toggleTask(@task.Id)" style="border-radius: 20px; font-weight: 500;">
+                                                    <i class="bi bi-@(task.IsCompleted ? "arrow-counterclockwise" : "check-circle") me-1"></i>@(task.IsCompleted ? "Desmarcar" : "Concluir")
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm px-3 py-2 flex-fill" onclick="deleteTask(@task.Id)" style="border-radius: 20px; font-weight: 500;">
+                                                    <i class="bi bi-trash me-1"></i>Excluir
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edição -->
+<div id="editModal" class="modal" style="display: none; background: rgba(0,0,0,0.7);" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div class="modal-header" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 20px 20px 0 0; padding: 25px;">
+                <h5 class="modal-title text-white fw-bold" style="font-size: 1.4rem;">
+                    <i class="bi bi-pencil-square me-2"></i>Editar Tarefa
+                </h5>
+                <button type="button" class="btn-close btn-close-white" onclick="cancelEdit()"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label text-white fw-medium">Título da Tarefa</label>
+                    <input type="text" class="form-control form-control-lg" id="editTitle" required style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;" placeholder="Digite o título da tarefa">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white fw-medium">Descrição</label>
+                    <textarea class="form-control form-control-lg" rows="3" id="editDescription" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;" placeholder="Digite uma descrição (opcional)"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="mb-3">
+                            <label class="form-label text-white fw-medium">Prioridade</label>
+                            <select class="form-select form-select-lg" id="editPriority" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;">
+                                <option value="1" style="background: #343a40; color: white;">🟢 Baixa</option>
+                                <option value="2" style="background: #343a40; color: white;">🟡 Média</option>
+                                <option value="3" style="background: #343a40; color: white;">🔴 Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="mb-3">
+                            <label class="form-label text-white fw-medium">Categoria</label>
+                            <select class="form-select form-select-lg" id="editCategory" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;">
+                                <option value="" style="background: #343a40; color: white;">Selecione uma categoria</option>
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category.Id" style="background: #343a40; color: white;">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white fw-medium">Data de Vencimento</label>
+                    <input type="date" class="form-control form-control-lg" id="editDueDate" style="border-radius: 12px; border: 2px solid #ffffff20; background: rgba(255,255,255,0.1); color: white !important;">
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="editIsCompleted" style="transform: scale(1.2);">
+                        <label class="form-check-label text-white fw-medium">
+                            Tarefa Concluída
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); border: none; border-radius: 0 0 20px 20px; padding: 25px;">
+                <button type="button" class="btn btn-outline-light px-4 py-2" onclick="cancelEdit()" style="border-radius: 25px; font-weight: 500; border: 2px solid #ffffff20;">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-light px-4 py-2 fw-bold" onclick="saveEditTask()" style="border-radius: 25px; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #000; border: none;">
+                    <i class="bi bi-check-circle me-2"></i>Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<TaskDto> tasks = new();
+    private List<CategoryDto> categories = new();
+    private bool isLoading = true;
+    private CreateTaskDto newTask = new();
+    private bool showEditModal = false;
+    private TaskDto? taskToEdit = null;
+    private UpdateTaskDto editTask = new();
+    private int editingTaskId = 0;
+
+    protected override async System.Threading.Tasks.Task OnInitializedAsync()
+    {
+        await LoadTasks();
+        await LoadCategories();
+    }
+
+    private async System.Threading.Tasks.Task LoadTasks()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            tasks = (await TaskService.GetTasksAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar tarefas: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async System.Threading.Tasks.Task LoadCategories()
+    {
+        try
+        {
+            categories = (await CategoryService.GetCategoriesAsync()).ToList();
+            Console.WriteLine($"Carregadas {categories.Count} categorias");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar categorias: {ex.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task CreateTask()
+    {
+        try
+        {
+            Console.WriteLine("🚀🚀🚀 MÉTODO CreateTask CHAMADO! 🚀🚀🚀");
+            Console.WriteLine($"Criando tarefa: {newTask.Title}");
+            Console.WriteLine($"Prioridade: {newTask.Priority}");
+            Console.WriteLine($"Descrição: {newTask.Description}");
+            
+            if (string.IsNullOrWhiteSpace(newTask.Title))
+            {
+                Console.WriteLine("❌ ERRO: Título está vazio!");
+                return;
+            }
+            
+            var createdTask = await TaskService.CreateTaskAsync(newTask);
+            if (createdTask != null)
+            {
+                newTask = new CreateTaskDto();
+                await LoadTasks();
+                Console.WriteLine("✅ Tarefa criada com sucesso!");
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erro ao criar tarefa: {ex.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task ToggleTask(int taskId)
+    {
+        try
+        {
+            Console.WriteLine($"🔄 ToggleTask chamado para ID: {taskId}");
+            var task = tasks.FirstOrDefault(t => t.Id == taskId);
+            if (task != null)
+            {
+                Console.WriteLine($"Tarefa encontrada: {task.Title}, Status atual: {task.IsCompleted}");
+                var updateDto = new UpdateTaskDto
+                {
+                    Title = task.Title,
+                    Description = task.Description,
+                    DueDate = task.DueDate,
+                    IsCompleted = !task.IsCompleted,
+                    Priority = task.Priority,
+                    CategoryId = task.CategoryId
+                };
+
+                Console.WriteLine($"Novo status: {updateDto.IsCompleted}");
+                var success = await TaskService.UpdateTaskAsync(taskId, updateDto);
+                Console.WriteLine($"UpdateTaskAsync retornou: {success}");
+                
+                if (success)
+                {
+                    await LoadTasks();
+                    Console.WriteLine($"✅ Tarefa {(!task.IsCompleted ? "concluída" : "desmarcada")}!");
+                    StateHasChanged();
+                }
+                else
+                {
+                    Console.WriteLine("❌ Falha ao atualizar tarefa");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"❌ Tarefa com ID {taskId} não encontrada");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erro ao atualizar tarefa: {ex.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task DeleteTask(int taskId)
+    {
+        try
+        {
+            Console.WriteLine($"🗑️ DeleteTask chamado para ID: {taskId}");
+            var success = await TaskService.DeleteTaskAsync(taskId);
+            Console.WriteLine($"DeleteTaskAsync retornou: {success}");
+            
+            if (success)
+            {
+                await LoadTasks();
+                Console.WriteLine("✅ Tarefa excluída!");
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("❌ Falha ao excluir tarefa");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erro ao excluir tarefa: {ex.Message}");
+        }
+    }
+
+    private void EditTask(TaskDto task)
+    {
+        Console.WriteLine($"✏️ EditTask chamado para: {task.Title}");
+        taskToEdit = task;
+        editTask = new UpdateTaskDto
+        {
+            Title = task.Title,
+            Description = task.Description,
+            DueDate = task.DueDate,
+            IsCompleted = task.IsCompleted,
+            Priority = task.Priority,
+            CategoryId = task.CategoryId
+        };
+        showEditModal = true;
+        Console.WriteLine("Modal de edição aberto");
+        StateHasChanged();
+    }
+
+    private async System.Threading.Tasks.Task SaveEditTask()
+    {
+        if (taskToEdit == null) 
+        {
+            Console.WriteLine("❌ taskToEdit é null");
+            return;
+        }
+
+        try
+        {
+            Console.WriteLine($"💾 SaveEditTask chamado para: {taskToEdit.Title}");
+            Console.WriteLine($"Novos dados - Título: {editTask.Title}, Status: {editTask.IsCompleted}");
+            
+            var success = await TaskService.UpdateTaskAsync(taskToEdit.Id, editTask);
+            Console.WriteLine($"UpdateTaskAsync retornou: {success}");
+            
+            if (success)
+            {
+                await LoadTasks();
+                showEditModal = false;
+                taskToEdit = null;
+                editTask = new UpdateTaskDto();
+                Console.WriteLine("✅ Tarefa atualizada com sucesso!");
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("❌ Falha ao atualizar tarefa");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erro ao atualizar tarefa: {ex.Message}");
+        }
+    }
+
+    private void CancelEdit()
+    {
+        showEditModal = false;
+        taskToEdit = null;
+        editTask = new UpdateTaskDto();
+        StateHasChanged();
+    }
+
+    private string GetPriorityClass(TaskPriority priority)
+    {
+        return priority switch
+        {
+            TaskPriority.Low => "bg-secondary",
+            TaskPriority.Medium => "bg-primary",
+            TaskPriority.High => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetPriorityText(TaskPriority priority)
+    {
+        return priority switch
+        {
+            TaskPriority.Low => "Baixa",
+            TaskPriority.Medium => "Média",
+            TaskPriority.High => "Alta",
+            _ => "Baixa"
+        };
+    }
+
+    private string GetPriorityGradient(TaskPriority priority)
+    {
+        return priority switch
+        {
+            TaskPriority.Low => "#28a745, #20c997",
+            TaskPriority.Medium => "#ffc107, #fd7e14",
+            TaskPriority.High => "#dc3545, #e83e8c",
+            _ => "#6c757d, #495057"
+        };
+    }
+}

@@ -1,0 +1,514 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["TaskManager.Web.styles.css"]" />
+    <style>
+        /* Estilos globais para melhor visibilidade */
+        .form-control::placeholder,
+        .form-select::placeholder {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        
+        .form-control,
+        .form-select {
+            color: white !important;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            color: white !important;
+            background-color: rgba(255,255,255,0.1) !important;
+            border-color: #ffffff40 !important;
+            box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25) !important;
+        }
+        
+        /* Estilos para links ativos na sidebar */
+        .nav-link.active {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+            color: white !important;
+            border-radius: 12px !important;
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1) !important;
+            border-radius: 12px !important;
+            transform: translateX(3px);
+            transition: all 0.3s ease;
+        }
+        
+        /* Estilos para o corpo da aplicação */
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+        }
+        
+        /* Melhorar contraste dos campos de data */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+        
+        /* Estilos para o modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.7) !important;
+        }
+    </style>
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Garantir que Bootstrap está carregado
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Bootstrap carregado e pronto!');
+        });
+
+        // Funções JavaScript para criação de tarefas e categorias
+        window.createTask = async function() {
+            console.log("🚀🚀🚀 JAVASCRIPT createTask CHAMADO! 🚀🚀🚀");
+            
+            const titleInput = document.querySelector('input[type="text"]');
+            const prioritySelect = document.querySelectorAll('select')[0];
+            const categorySelect = document.querySelectorAll('select')[1];
+            const descriptionTextarea = document.querySelector('textarea');
+            const dateInput = document.querySelector('input[type="date"]');
+            
+            // Validar dados
+            if (!titleInput.value.trim()) {
+                alert("Por favor, preencha o título da tarefa!");
+                return;
+            }
+            
+            // Usar prioridade padrão se não selecionada
+            let priorityValue = parseInt(prioritySelect.value);
+            console.log("Valor da prioridade:", prioritySelect.value, "Convertido:", priorityValue);
+            
+            if (isNaN(priorityValue) || priorityValue < 1 || priorityValue > 4) {
+                console.log("Prioridade inválida, usando padrão (Média = 2):", priorityValue);
+                priorityValue = 2; // Média como padrão
+            }
+            
+            const taskData = {
+                title: titleInput.value.trim(),
+                priority: priorityValue,
+                description: descriptionTextarea.value.trim() || null,
+                dueDate: dateInput.value || null,
+                categoryId: categorySelect.value ? parseInt(categorySelect.value) : null
+            };
+            
+            console.log("Dados da tarefa:", taskData);
+            console.log("JSON enviado:", JSON.stringify(taskData));
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                console.log("Resposta da API:", response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Erro detalhado da API:", errorText);
+                }
+                
+                if (response.ok) {
+                    console.log("✅ Tarefa criada com sucesso!");
+                    alert("Tarefa criada com sucesso!");
+                    
+                    // Limpar formulário
+                    titleInput.value = '';
+                    prioritySelect.value = '2';
+                    categorySelect.value = '';
+                    descriptionTextarea.value = '';
+                    dateInput.value = '';
+                    
+                    // Recarregar apenas a lista de tarefas
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao criar tarefa:", response.status);
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+            }
+        };
+
+        window.createCategory = async function() {
+            console.log("🚀🚀🚀 JAVASCRIPT createCategory CHAMADO! 🚀🚀🚀");
+            
+            const nameInput = document.querySelector('input[type="text"]');
+            const colorInput = document.querySelector('input[type="color"]');
+            
+            const categoryData = {
+                name: nameInput.value,
+                color: colorInput.value
+            };
+            
+            console.log("Dados da categoria:", categoryData);
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/categories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(categoryData)
+                });
+                
+                console.log("Resposta da API:", response.status);
+                
+                if (response.ok) {
+                    console.log("✅ Categoria criada com sucesso!");
+                    alert("Categoria criada com sucesso!");
+                    
+                    // Limpar formulário
+                    nameInput.value = '';
+                    colorInput.value = '#007bff';
+                    
+                    // Recarregar apenas a lista de categorias
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao criar categoria:", response.status);
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+            }
+        };
+
+        // Funções para ações das tarefas
+        window.toggleTask = async function(taskId) {
+            console.log("🔄 ToggleTask chamado para ID:", taskId);
+            
+            try {
+                // Primeiro, buscar a tarefa atual para obter os dados
+                const getResponse = await fetch(`http://localhost:5000/api/tasks/${taskId}`);
+                if (!getResponse.ok) {
+                    console.error("Erro ao buscar tarefa:", getResponse.status);
+                    return;
+                }
+                
+                const task = await getResponse.json();
+                console.log("Tarefa atual:", task);
+                
+                // Inverter o status de conclusão
+                const updateData = {
+                    title: task.title,
+                    description: task.description,
+                    dueDate: task.dueDate,
+                    isCompleted: !task.isCompleted,
+                    priority: task.priority,
+                    categoryId: task.categoryId
+                };
+                
+                console.log("Dados para atualização:", updateData);
+                
+                const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                console.log("Resposta da atualização:", response.status);
+                
+                if (response.ok) {
+                    console.log("✅ Tarefa atualizada com sucesso!");
+                    alert(`Tarefa ${!task.isCompleted ? "concluída" : "desmarcada"}!`);
+                    
+                    // Recarregar a página
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao atualizar tarefa:", response.status);
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+            }
+        };
+
+        window.editTask = function(taskId, title, description, priority, categoryId, dueDate, isCompleted) {
+            console.log("✏️ EditTask chamado para ID:", taskId);
+            console.log("Dados da tarefa:", { taskId, title, description, priority, categoryId, dueDate, isCompleted });
+            
+            // Armazenar o ID da tarefa sendo editada
+            window.editingTaskId = taskId;
+            
+            // Preencher o modal de edição usando IDs específicos
+            const modal = document.getElementById('editModal');
+            console.log("Modal encontrado:", modal);
+            
+            if (modal) {
+                // Preencher campos usando IDs específicos
+                const titleInput = document.getElementById('editTitle');
+                const descriptionTextarea = document.getElementById('editDescription');
+                const prioritySelect = document.getElementById('editPriority');
+                const categorySelect = document.getElementById('editCategory');
+                const dateInput = document.getElementById('editDueDate');
+                const completedCheckbox = document.getElementById('editIsCompleted');
+                
+                console.log("Elementos encontrados:", {
+                    titleInput, descriptionTextarea, prioritySelect, 
+                    categorySelect, dateInput, completedCheckbox
+                });
+                
+                if (titleInput) {
+                    titleInput.value = title || '';
+                    console.log("Título preenchido:", titleInput.value);
+                }
+                if (descriptionTextarea) {
+                    descriptionTextarea.value = description || '';
+                    console.log("Descrição preenchida:", descriptionTextarea.value);
+                }
+                if (prioritySelect) {
+                    prioritySelect.value = priority || 2;
+                    console.log("Prioridade preenchida:", prioritySelect.value);
+                }
+                if (categorySelect) {
+                    categorySelect.value = categoryId || '';
+                    console.log("Categoria preenchida:", categorySelect.value);
+                }
+                if (dateInput) {
+                    dateInput.value = dueDate || '';
+                    console.log("Data preenchida:", dateInput.value);
+                }
+                if (completedCheckbox) {
+                    completedCheckbox.checked = isCompleted === true;
+                    console.log("Checkbox preenchido:", completedCheckbox.checked);
+                }
+                
+                // Mostrar o modal
+                modal.style.display = 'block';
+                modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                console.log("Modal de edição aberto");
+            } else {
+                console.error("❌ Modal não encontrado!");
+            }
+        };
+
+        window.saveEditTask = async function() {
+            console.log("💾 SaveEditTask chamado");
+            
+            if (!window.editingTaskId) {
+                console.error("❌ Nenhuma tarefa sendo editada");
+                return;
+            }
+            
+            const modal = document.getElementById('editModal');
+            if (!modal) {
+                console.error("❌ Modal não encontrado");
+                return;
+            }
+            
+            // Buscar elementos usando IDs específicos
+            const titleInput = document.getElementById('editTitle');
+            const descriptionTextarea = document.getElementById('editDescription');
+            const prioritySelect = document.getElementById('editPriority');
+            const categorySelect = document.getElementById('editCategory');
+            const dateInput = document.getElementById('editDueDate');
+            const completedCheckbox = document.getElementById('editIsCompleted');
+            
+            if (!titleInput || titleInput.value.trim() === '') {
+                alert('Por favor, preencha o título da tarefa.');
+                return;
+            }
+            
+            const updateData = {
+                title: titleInput.value.trim(),
+                description: descriptionTextarea.value.trim() || null,
+                priority: parseInt(prioritySelect.value),
+                categoryId: categorySelect.value ? parseInt(categorySelect.value) : null,
+                dueDate: dateInput.value || null,
+                isCompleted: completedCheckbox.checked
+            };
+            
+            console.log("Dados para atualização:", updateData);
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/tasks/${window.editingTaskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                console.log("Resposta da atualização:", response.status);
+                
+                if (response.ok) {
+                    console.log("✅ Tarefa atualizada com sucesso!");
+                    alert("Tarefa atualizada com sucesso!");
+                    
+                    // Fechar o modal
+                    modal.style.display = 'none';
+                    modal.style.backgroundColor = '';
+                    window.editingTaskId = 0;
+                    
+                    // Recarregar a página
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao atualizar tarefa:", response.status);
+                    const errorText = await response.text();
+                    console.error("Erro detalhado:", errorText);
+                    alert("Erro ao atualizar tarefa. Verifique o console para mais detalhes.");
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+                alert("Erro na requisição. Verifique o console para mais detalhes.");
+            }
+        };
+
+        window.deleteTask = async function(taskId) {
+            console.log("🗑️ DeleteTask chamado para ID:", taskId);
+            
+            if (!confirm("Tem certeza que deseja excluir esta tarefa?")) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                
+                console.log("Resposta da exclusão:", response.status);
+                
+                if (response.ok) {
+                    console.log("✅ Tarefa excluída com sucesso!");
+                    alert("Tarefa excluída com sucesso!");
+                    
+                    // Recarregar a página
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao excluir tarefa:", response.status);
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+            }
+        };
+
+        // Funções para ações das categorias
+        window.editCategory = function(categoryId, name, color) {
+            console.log("✏️ EditCategory chamado para ID:", categoryId);
+            console.log("Dados da categoria:", { categoryId, name, color });
+            
+            const newName = prompt("Novo nome da categoria:", name);
+            if (newName === null || newName.trim() === '') {
+                return;
+            }
+            
+            const newColor = prompt("Nova cor da categoria (hex):", color);
+            if (newColor === null || newColor.trim() === '') {
+                return;
+            }
+            
+            updateCategory(categoryId, newName.trim(), newColor.trim());
+        };
+
+        window.updateCategory = async function(categoryId, name, color) {
+            console.log("💾 UpdateCategory chamado");
+            
+            const updateData = {
+                name: name,
+                color: color
+            };
+            
+            console.log("Dados para atualização:", updateData);
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/categories/${categoryId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                console.log("Resposta da atualização:", response.status);
+                
+                if (response.ok) {
+                    console.log("✅ Categoria atualizada com sucesso!");
+                    alert("Categoria atualizada com sucesso!");
+                    
+                    // Recarregar a página
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao atualizar categoria:", response.status);
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+            }
+        };
+
+        window.deleteCategory = async function(categoryId) {
+            console.log("🗑️ DeleteCategory chamado para ID:", categoryId);
+            
+            if (!confirm("Tem certeza que deseja excluir esta categoria?")) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/categories/${categoryId}`, {
+                    method: 'DELETE'
+                });
+                
+                console.log("Resposta da exclusão:", response.status);
+                
+                if (response.ok) {
+                    console.log("✅ Categoria excluída com sucesso!");
+                    alert("Categoria excluída com sucesso!");
+                    
+                    // Recarregar a página
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    console.error("❌ Erro ao excluir categoria:", response.status);
+                }
+            } catch (error) {
+                console.error("❌ Erro na requisição:", error);
+            }
+        };
+
+        // Função para cancelar edição
+        window.cancelEdit = function() {
+            console.log("❌ CancelEdit chamado");
+            const modal = document.getElementById('editModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.backgroundColor = '';
+                window.editingTaskId = 0;
+                console.log("Modal fechado");
+            }
+        };
+    </script>
+</body>
+
+</html>
